@@ -1,5 +1,6 @@
 import socket
 import json
+import struct
 
 
 class Client:
@@ -14,7 +15,7 @@ class Client:
         except OSError:
             print("connection failed", OSError)
 
-    def sign_in(self, port: int):
+    def sign_in(self, port: int) -> tuple[socket.socket, tuple[str, int]]:
         tojson_dict = {
             "request": "subscribe",
             "port": port,
@@ -23,36 +24,33 @@ class Client:
         }
         json_str = json.dumps(tojson_dict)
         encoded_json_str = json_str.encode()
-        sent = self.__socket.send(encoded_json_str, 1024)
-        while sent < len(json_str):
-            sent += self.__socket.send(encoded_json_str[sent:])
+        announcement = struct.pack("@I", len(encoded_json_str))
+        sent = self.__socket.send(announcement)
+
+        while sent < len(announcement):
+            sent += self.__socket.send(announcement[sent:])
         print("sent")
-        self.__socket.close()
+
+        request = encoded_json_str
+        sent = self.__socket.send(request)
+        while sent < len(request):
+            sent += self.__socket.send(request[sent:])
+        print("sent")
+        return self.__socket, (self.__address[0], port)
 
 
 class Server:
-    __address: tuple[str, int]
     __socket: socket.socket
+    __address: tuple[str, int]
 
-    def __init__(self, port: int, host: str):
-        self.__address = (host, port)
-        self.__socket = socket.socket()
-        try:
-            self.__socket.bind(self.__address)
-        except OSError:
-            print("connection failed", OSError)
-        self.__socket.listen()
+    def __init__(self, sign_in_socket: socket.socket, sign_in_address: tuple[str, int]):
+        self.__socket = sign_in_socket
+        self.__address = sign_in_address
 
     def sign_in(self):
-        self.__socket.settimeout(5)
-        while 1:
-            try:
-                server, address = self.__socket.accept()
-                break
-            except socket.timeout:
-                pass
-        json_str = server.recv(1024).decode()
-        json_dict = json.loads(json_str)
+        response = struct.unpack_from("@s",self.__socket.recv(1024), 3)[0].decode()
+        print(response)
+        json_dict = json.loads(response)
         if json_dict["response"] == "ok":
             print("succeeded")
         else:
@@ -61,6 +59,6 @@ class Server:
 
 
 c = Client(3000, "172.17.10.41")
-c.sign_in(4000)
-s = Server(4000, "172.17.10.41")
+communication_socket, communication_address = c.sign_in(4000)
+s = Server(communication_socket, communication_address)
 s.sign_in()
