@@ -1,2 +1,5 @@
 venv/
 Extensions/
+idea/
+__*
+.*

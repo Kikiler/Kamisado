@@ -1,6 +1,9 @@
 import socket
 import json
 import struct
+from email.policy import default
+
+from Constants import *
 
 
 class Client:
@@ -9,56 +12,101 @@ class Client:
 
     def __init__(self, port: int, host: str):
         self.__address = (host, port)
-        self.__socket = socket.socket()
-        try:
-            self.__socket.connect(self.__address)
-        except OSError:
-            print("connection failed", OSError)
 
-    def sign_in(self, port: int) -> tuple[socket.socket, tuple[str, int]]:
-        tojson_dict = {
-            "request": "subscribe",
-            "port": port,
-            "name": "roofdier",
-            "matricules": ["24330", "24330"]
-        }
-        json_str = json.dumps(tojson_dict)
-        encoded_json_str = json_str.encode()
-        announcement = struct.pack("@I", len(encoded_json_str))
+    def __send_msg(self, msg: str, ):
+        self.__config_socket()
+        encoded_json_str = msg.encode()
+        announcement = struct.pack("@I", len(encoded_json_str)) # size
         sent = self.__socket.send(announcement)
 
+# send size
         while sent < len(announcement):
             sent += self.__socket.send(announcement[sent:])
-        print("sent")
 
+#send content
         request = encoded_json_str
         sent = self.__socket.send(request)
         while sent < len(request):
             sent += self.__socket.send(request[sent:])
-        print("sent")
-        return self.__socket, (self.__address[0], port)
+
+        print(f"Message of {len(request)} bytes has been sent")
+
+
+    def __config_socket(self):
+        self.__socket = socket.socket()
+        try:
+            self.__socket.connect(self.__address)
+        except OSError:
+            raise OSError("connection failed in config_socket")
+
+    def sign_in_request(self, port: int):
+        tojson_dict = {
+            "request": "subscribe",
+            "port": port,
+            "name": NAME_TAG,
+            "matricules": [MATRICULE]
+        }
+        self.__send_msg(json.dumps(tojson_dict))
+        self.__socket.close()
+
+    def pong_request(self):
+        pong_request_dict = {
+            "response": "pong"
+        }
+        json_str = json.dumps(pong_request_dict)
+        self.__send_msg(json_str)
+        self.__socket.close()
+
 
 
 class Server:
     __socket: socket.socket
     __address: tuple[str, int]
 
-    def __init__(self, sign_in_socket: socket.socket, sign_in_address: tuple[str, int]):
-        self.__socket = sign_in_socket
-        self.__address = sign_in_address
+    def __init__(self, host: str, port):
+        self.__address = (host, port)
+
+    def __config_socket(self):
+        self.__socket = socket.socket()
+        try:
+            self.__socket.bind(self.__address)
+        except OSError:
+            print('connection failed in server init', OSError)
+        self.__socket.listen()
+
+    def __receive_msg(self) -> str:
+        self.__config_socket()
+        self.__socket.settimeout(5)
+        while 1:
+            try:
+                emitter, address = self.__socket.accept()
+                break
+            except socket.timeout:
+                print("timed out")
+
+        response_size = struct.unpack("@I", emitter.recv(4))[0] #getting size of msg
+        print(response_size)
+        received = emitter.recv(response_size)
+        while len(received) < response_size:
+            received += emitter.recv(response_size - len(received))
+
+#reading content
+        json_dict = json.loads(received.decode())
+        print(json_dict)
+        if json_dict.get("response") == "ok":
+            return "response"
+        elif json_dict.get("request") == "ping":
+            return "request"
+        else:
+            raise RuntimeError("unexpected branching")
 
     def sign_in(self):
-        response = struct.unpack_from("@s",self.__socket.recv(1024), 3)[0].decode()
-        print(response)
-        json_dict = json.loads(response)
-        if json_dict["response"] == "ok":
-            print("succeeded")
-        else:
-            print("failed")
+        self.__receive_msg()
         self.__socket.close()
 
 
-c = Client(3000, "172.17.10.41")
-communication_socket, communication_address = c.sign_in(4000)
-s = Server(communication_socket, communication_address)
+c = Client(RECEPTION_PORT, GAME_HOSTING_IP_ADDRESS)
+c.sign_in_request(RECEPTION_PORT)
+s = Server(MY_IP, RECEPTION_PORT)
 s.sign_in()
+c.pong_request()
