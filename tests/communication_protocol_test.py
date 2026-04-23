@@ -1,5 +1,4 @@
 import unittest
-
 import Constants
 from communication_protocol import Server, Client
 import threading
@@ -13,7 +12,7 @@ class ServerTest(unittest.TestCase):
         thread.start()
         server = Server()
         self.assertEqual(server.receive_msg()[0], "response")
-        self.assertEqual(server.receive_msg()[1], "pong")
+        self.assertEqual(server.receive_msg()[1]["response"], "pong")
         thread.join(5)
 
     def test_sign_in_communication(self):
@@ -22,13 +21,8 @@ class ServerTest(unittest.TestCase):
         thread.start()
         server = Server()
         self.assertEqual(server.receive_msg()[0], "request")
-        self.assertEqual(server.receive_msg()[1], "subscribe")
+        self.assertEqual(server.receive_msg()[1]["request"], "subscribe")
         thread.join(5)
-
-
-
-
-
 
 
 if __name__ == '__main__':
