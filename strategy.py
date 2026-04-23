@@ -1,7 +1,5 @@
-import numpy as np
-import json
 import random
-import Constants
+import constants
 
 
 class Strategy:
@@ -12,7 +10,7 @@ class Strategy:
         color_to_play = game_info["color"]
         response_dict = dict()
         my_color = "light"
-        if game_info["players"][0] == Constants.NAME_TAG:
+        if game_info["players"][0] == constants.NAME_TAG:
             my_color = "dark"
         response_dict["response"] = "move"
         valid_moves = Strategy.valid_moves(game_state, my_color,color_to_play)[1]
@@ -23,7 +21,7 @@ class Strategy:
     @staticmethod
     def valid_moves(tensor: list[list], my_color: str, to_play_color: str) -> tuple[tuple[int,int], list]:
         valid_moves_list = list()
-        current_soldier = Strategy.__retrieve_soldier(tensor, my_color, to_play_color)
+        current_soldier = Strategy._retrieve_soldier(tensor, my_color, to_play_color)
         if my_color == "light":
             for i in range(current_soldier[0]+1,8):
                 if tensor[i][current_soldier[1]][1][0] == "dark":
@@ -63,8 +61,8 @@ class Strategy:
         return current_soldier, valid_moves_list
 
     @staticmethod
-    def __retrieve_soldier(tensor: list[list], my_color: str, to_play_color: str) -> tuple[int, int]:
-        if to_play_color != "null":
+    def _retrieve_soldier(tensor: list[list], my_color: str, to_play_color: str) -> tuple[int, int]:
+        if to_play_color is not None:
             if my_color == "light":
                 for i in range(8):
                     for j in range(8):

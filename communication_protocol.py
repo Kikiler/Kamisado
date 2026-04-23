@@ -1,13 +1,14 @@
 import socket
 import json
 import struct
-import Constants
+
+import constants
 
 
 class Client:
     __address: tuple[str, int]
 
-    def __init__(self, ip_address: str = Constants.GAME_HOSTING_IP_ADDRESS, port: int = Constants.COMMUNICATION_PORT):
+    def __init__(self, ip_address: str = constants.GAME_HOSTING_IP_ADDRESS, port: int = constants.COMMUNICATION_PORT):
         self.__address = (ip_address, port)
 
     @staticmethod
@@ -35,12 +36,12 @@ class Client:
             raise OSError("connection failed in config_socket")
         return your_socket
 
-    def sign_in_request(self, port: int = Constants.RECEPTION_PORT, name: str = Constants.NAME_TAG):
+    def sign_in_request(self, port: int = constants.RECEPTION_PORT, name: str = constants.NAME_TAG):
         tojson_dict = {
             "request": "subscribe",
             "port": port,
             "name": name,
-            "matricules": [Constants.MATRICULE]
+            "matricules": [constants.MATRICULE]
         }
         current_socket = self.__config_socket()
         self.__send_msg(json.dumps(tojson_dict), current_socket)
@@ -82,7 +83,7 @@ class Server:
     __socket: socket.socket
     __address: tuple[str, int]
 
-    def __init__(self, ip_address: str = Constants.MY_IP, port: int = Constants.RECEPTION_PORT):
+    def __init__(self, ip_address: str = constants.MY_IP, port: int = constants.RECEPTION_PORT):
         self.__address = (ip_address, port)
         self.__socket = socket.socket()
         try:
