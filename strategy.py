@@ -9,56 +9,63 @@ class Strategy:
         game_state = game_info["board"]
         color_to_play = game_info["color"]
         response_dict = dict()
-        my_color = "light"
+        response_dict["response"] = "move"
         if game_info["players"][0] == constants.NAME_TAG:
             my_color = "dark"
-        response_dict["response"] = "move"
-        valid_moves = Strategy.valid_moves(game_state, my_color,color_to_play)[1]
-        response_dict["move"] = [valid_moves[0], random.choice(valid_moves[1])]
+            current_soldier_position = Strategy._retrieve_soldier(game_state, my_color, color_to_play)
+            valid_moves = Strategy.valid_moves_for_black(game_state, current_soldier_position)
+        else:
+            my_color = "light"
+            current_soldier_position = Strategy._retrieve_soldier(game_state, my_color, color_to_play)
+            valid_moves = Strategy.valid_moves_for_white(game_state, current_soldier_position)
+
+        response_dict["move"] = [current_soldier_position, random.choice(valid_moves)]
         response_dict["message"] = "alles < Nederlands "
         return response_dict
 
     @staticmethod
-    def valid_moves(tensor: list[list], my_color: str, to_play_color: str) -> tuple[tuple[int,int], list]:
+    def valid_moves_for_white(tensor: list[list], current_soldier: tuple[int, int]) -> list[tuple[int, int]]:
         valid_moves_list = list()
-        current_soldier = Strategy._retrieve_soldier(tensor, my_color, to_play_color)
-        if my_color == "light":
+        for i in range(current_soldier[0]+1,8):
+            if tensor[i][current_soldier[1]] is not None:
+                break
+            else:
+                valid_moves_list.append((i, current_soldier[1]))
+        if current_soldier[1] + 1 < 7:
             for i in range(current_soldier[0]+1,8):
-                if tensor[i][current_soldier[1]][1][0] == "dark":
+                if tensor[i][current_soldier[1]] is not None:
+                    break
+                else:
+                        valid_moves_list.append((i, current_soldier[1]))
+        if 0 <= current_soldier[1] - 1:
+            for i in range(current_soldier[0]+1, 8):
+                if tensor[i][current_soldier[1]] is not None:
                     break
                 else:
                     valid_moves_list.append((i, current_soldier[1]))
-            if current_soldier[1] + 1 < 7:
-                for i in range(current_soldier[0]+1,8):
-                    if tensor[i][current_soldier[1]+1][1][0] == "dark":
-                        break
-                    else:
-                            valid_moves_list.append((i, current_soldier[1]))
-            if 0 <= current_soldier[1] - 1:
-                for i in range(current_soldier[0]+1,8):
-                    if tensor[i][current_soldier[1]-1][1][0] == "dark":
-                        break
-                    else:
-                        valid_moves_list.append((i, current_soldier[1]))
-        else:
-            for i in range(current_soldier[0],-1,-1):
-                if tensor[i][current_soldier[1]][1][0] == "light":
+        return valid_moves_list
+
+    def valid_moves_for_black(tensor: list[list], current_soldier: tuple[int, int]) -> list[tuple[int, int]]:
+        valid_moves_list = list()
+        for i in range(current_soldier[0] - 1, -1, -1):
+            if tensor[i][current_soldier[1]] is not None:
+                break
+            else:
+                valid_moves_list.append((i, current_soldier[1]))
+        if current_soldier[1] + 1 < 7:
+            for i in range(current_soldier[0] - 1, -1, -1):
+                if tensor[i][current_soldier[1]] is not None:
                     break
                 else:
                     valid_moves_list.append((i, current_soldier[1]))
-            if current_soldier[1] + 1 < 7:
-                for i in range(current_soldier[0]+1,8):
-                    if tensor[i][current_soldier[1]+1][1][0] == "light":
-                        break
-                    else:
-                        valid_moves_list.append((i, current_soldier[1]))
-            if 0 <= current_soldier[1] - 1:
-                for i in range(current_soldier[0]+1,8):
-                    if tensor[i][current_soldier[1]-1][1][0] == "light":
-                        break
-                    else:
-                        valid_moves_list.append((i, current_soldier[1]))
-        return current_soldier, valid_moves_list
+        if 0 <= current_soldier[1] - 1:
+            for i in range(current_soldier[0] - 1, -1, -1):
+                if tensor[i][current_soldier[1]] is not None:
+                    break
+                else:
+                    valid_moves_list.append((i, current_soldier[1]))
+        return valid_moves_list
+
 
     @staticmethod
     def _retrieve_soldier(tensor: list[list], my_color: str, to_play_color: str) -> tuple[int, int]:
