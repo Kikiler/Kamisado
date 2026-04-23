@@ -1,17 +1,15 @@
 import socket
 import json
 import struct
-import threading
-
-from Constants import *
+import Constants
 
 
 class Client:
     __address: tuple[str, int]
     __socket: socket.socket
 
-    def __init__(self, port: int, host: str):
-        self.__address = (host, port)
+    def __init__(self, ip_address: str = Constants.GAME_HOSTING_IP_ADDRESS, port: int = Constants.COMMUNICATION_PORT ):
+        self.__address = (ip_address, port)
 
     def __send_msg(self, msg: str, ):
         self.__config_socket()
@@ -39,12 +37,12 @@ class Client:
         except OSError:
             raise OSError("connection failed in config_socket")
 
-    def sign_in_request(self, port: int):
+    def sign_in_request(self, port: int = Constants.RECEPTION_PORT, name: str = Constants.NAME_TAG):
         tojson_dict = {
             "request": "subscribe",
             "port": port,
-            "name": NAME_TAG,
-            "matricules": [MATRICULE]
+            "name": name,
+            "matricules": [Constants.MATRICULE]
         }
         self.__send_msg(json.dumps(tojson_dict))
 
@@ -55,12 +53,23 @@ class Client:
         json_str = json.dumps(pong_request_dict)
         self.__send_msg(json_str)
 
+    def run(self, func):
+        from time import sleep
+        sleep(5)
+        for i in range(10):
+            try:
+                func()
+            except TypeError:
+                TypeError("not callable")
+
+
+
 class Server:
     __socket: socket.socket
     __address: tuple[str, int]
 
-    def __init__(self, host: str, port):
-        self.__address = (host, port)
+    def __init__(self, ip_address: str = Constants.MY_IP, port: int = Constants.RECEPTION_PORT):
+        self.__address = (ip_address, port)
         self.__socket = socket.socket()
         try:
             self.__socket.bind(self.__address)
@@ -88,7 +97,6 @@ class Server:
 
         #reading content
         json_dict = json.loads(received.decode())
-        print(json_dict)
         if json_dict.get("response") is not None:
             return "response", json_dict.get("response")
         elif json_dict.get("request") is not None:
@@ -96,29 +104,9 @@ class Server:
         else:
             raise RuntimeError("unexpected branching")
 
-    def sign_in(self):
-        self.receive_msg()
-
     def run(self):
-        pass
+        while 1:
+            print(self.receive_msg()[1])
 
 
-c = Client(COMMUNICATION_PORT, GAME_HOSTING_IP_ADDRESS)
-s = Server(MY_IP, RECEPTION_PORT)
-t = threading.Thread(target=s.sign_in, daemon=True)
-t.start()
-c.sign_in_request(RECEPTION_PORT)
-while 1:
-    response = s.receive_msg()
-    if response[0] == "request":
-        if response[1] == "ping":
-            c.pong_request()
-        elif response[1] == "play":
-            print("should play now")
-        else:
-            raise RuntimeError("unexpected branching")
-    elif response[0] == "response":
-        if response[1] == "error":
-            s.sign_in()
-        elif response[1] == "ok":
-            print("correctly signed in")
+
