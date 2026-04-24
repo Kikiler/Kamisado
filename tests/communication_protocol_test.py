@@ -1,7 +1,6 @@
-import socket
 import unittest
-import constants
 from communication_protocol import Server, Client
+import constants
 import threading
 
 
