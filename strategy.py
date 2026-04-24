@@ -1,9 +1,6 @@
 import random
-from re import search
-
 import constants
 from copy import deepcopy
-from collections import deque
 
 
 class Strategy:
@@ -33,44 +30,49 @@ class Strategy:
     def valid_moves_for_white(tensor: list[list], current_soldier_position: tuple[int, int]) -> list[tuple[int, int]]:
         valid_moves_list = list()
         for i in range(current_soldier_position[0] + 1, 8):
-            if tensor[i][current_soldier_position[1]] is not None:
+            if tensor[i][current_soldier_position[1]][1] is not None:
                 break
             else:
                 valid_moves_list.append((i, current_soldier_position[1]))
-        if current_soldier_position[1] + 1 < 7:
-            for i in range(current_soldier_position[0] + 1, 8):
-                if tensor[i][current_soldier_position[1]] is not None:
-                    break
-                else:
-                    valid_moves_list.append((i, current_soldier_position[1]))
-        if 0 <= current_soldier_position[1] - 1:
-            for i in range(current_soldier_position[0] + 1, 8):
-                if tensor[i][current_soldier_position[1]] is not None:
-                    break
-                else:
-                    valid_moves_list.append((i, current_soldier_position[1]))
+        for i in range(current_soldier_position[0] + 1, 8):
+            if 8 <= current_soldier_position[1] + i - current_soldier_position[0]:
+                break
+            if tensor[i][current_soldier_position[1]][1] is not None:
+                break
+            else:
+                valid_moves_list.append((i, current_soldier_position[1] + i - current_soldier_position[0]))
+        for i in range(current_soldier_position[0] + 1, 8):
+            if current_soldier_position[1] - i + current_soldier_position[0] < 0:
+                break
+            if tensor[i][current_soldier_position[1]][1] is not None:
+                break
+            else:
+                valid_moves_list.append((i, current_soldier_position[1] - i + current_soldier_position[0]))
         random.shuffle(valid_moves_list)
         return valid_moves_list
 
+    @staticmethod
     def valid_moves_for_black(tensor: list[list], current_soldier_position: tuple[int, int]) -> list[tuple[int, int]]:
         valid_moves_list = list()
         for i in range(current_soldier_position[0] - 1, -1, -1):
-            if tensor[i][current_soldier_position[1]] is not None:
+            if tensor[i][current_soldier_position[1]][1] is not None:
                 break
             else:
                 valid_moves_list.append((i, current_soldier_position[1]))
-        if current_soldier_position[1] + 1 < 7:
-            for i in range(current_soldier_position[0] - 1, -1, -1):
-                if tensor[i][current_soldier_position[1]] is not None:
-                    break
-                else:
-                    valid_moves_list.append((i, current_soldier_position[1]))
-        if 0 <= current_soldier_position[1] - 1:
-            for i in range(current_soldier_position[0] - 1, -1, -1):
-                if tensor[i][current_soldier_position[1]] is not None:
-                    break
-                else:
-                    valid_moves_list.append((i, current_soldier_position[1]))
+        for i in range(current_soldier_position[0] - 1, -1, -1):
+            if 8 <= current_soldier_position[1] + current_soldier_position[0] - i:
+                break
+            if tensor[i][current_soldier_position[1] + current_soldier_position[0] - i][1] is not None:
+                break
+            else:
+                valid_moves_list.append((i, current_soldier_position[1] + current_soldier_position[0] - i))
+        for i in range(current_soldier_position[0] - 1, -1, -1):
+            if current_soldier_position[1] - current_soldier_position[0] - i < 0:
+                break
+            elif tensor[i][current_soldier_position[1]][1] is not None:
+                break
+            else:
+                valid_moves_list.append((i, current_soldier_position[1] - current_soldier_position[0] - i))
         random.shuffle(valid_moves_list)
         return valid_moves_list
 

@@ -27,6 +27,7 @@ class StrategyTest(unittest.TestCase):
                                                                        constants_test.STARTING_INFO["color"])
         valid_moves = strategy.Strategy.valid_moves_for_black(constants_test.STARTING_INFO["board"],
                                                               current_soldier_position)
+        self.assertTrue(len(valid_moves) <= 13, "maximum 13 moves valid")
         for moves in valid_moves:
             self.assertTrue(constants_test.STARTING_INFO["board"][moves[0]][moves[1]][1] is None,
                             "put an occupied place in valid moves")
@@ -35,9 +36,22 @@ class StrategyTest(unittest.TestCase):
                                                                        constants_test.STARTING_INFO["color"])
         valid_moves = strategy.Strategy.valid_moves_for_black(constants_test.STARTING_INFO["board"],
                                                               current_soldier_position)
+        self.assertTrue(len(valid_moves) <= 13, "maximum 13 moves valid")
         for moves in valid_moves:
             self.assertTrue(constants_test.STARTING_INFO["board"][moves[0]][moves[1]][1] is None,
                             "put an occupied place in valid moves")
+
+        current_soldier_position = (0, 0)
+        valid_moves = strategy.Strategy.valid_moves_for_white(constants_test.STARTING_INFO["board"],
+                                                              current_soldier_position)
+        self.assertTrue(len(valid_moves) <= 13, "maximum 13 moves permitted")
+        all_valid_moves = [(1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)]
+        self.assertEqual(sorted(valid_moves), sorted(all_valid_moves), "method misses some valid moves")
+
+
+
+
+
 
     def test_search(self):
         current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"], "dark",
