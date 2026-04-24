@@ -82,13 +82,13 @@ class Strategy:
             if my_color == "light":
                 for i in range(8):
                     for j in range(8):
-                        if tensor[i][j][1][0] == to_play_color and tensor[i][j][1][1] == my_color:
+                        if tensor[i][j][1] is not None and tensor[i][j][1][0] == to_play_color and tensor[i][j][1][1] == my_color:
                             return i, j
                 raise RuntimeError("unexpected branching")
             elif my_color == "dark":
                 for i in range(7, -1, -1):
                     for j in range(7, -1, -1):
-                        if tensor[i][j][1][0] == to_play_color and tensor[i][j][1][1] == my_color:
+                        if tensor[i][j][1] is not None and tensor[i][j][1][0] == to_play_color and tensor[i][j][1][1] == my_color:
                             return i, j
                 raise RuntimeError("unexpected branching")
             else:
@@ -107,7 +107,7 @@ class Strategy:
         pass
 
     @staticmethod
-    def _search(tensor: list[list], my_color: str, current_soldier_position: tuple[int, int], color_to_play: str) -> \
+    def _search(tensor: list[list], my_color: str, current_soldier_position: tuple[int, int]) -> \
             tuple[tuple[int, int], tuple[int, int]]:
 
         if my_color == "light":
@@ -119,13 +119,14 @@ class Strategy:
         winning = Strategy._can_win(valid_moves, my_color)
         if winning is None:
             for move in valid_moves:
-                new_tensor, new_color_to_play = Strategy._move_state(tensor, move, current_soldier_position, my_color,
-                                                                     color_to_play)
-                winning = Strategy._search(new_tensor, other_color, move, new_color_to_play)
+                new_tensor, new_color_to_play = Strategy._move_state(tensor, move, current_soldier_position, my_color)
+                winning = Strategy._search(new_tensor, other_color,
+                                           Strategy._retrieve_soldier(new_tensor, other_color, new_color_to_play))
                 if winning is not None:
                     return current_soldier_position, move
         return current_soldier_position, winning
 
+    @staticmethod
     def _can_win(positions: list[tuple[int, int]], my_color: str) -> tuple[int, int] | None:
         if my_color == "light":
             for position in positions:
@@ -135,11 +136,14 @@ class Strategy:
             for position in positions:
                 if position[0] == 0:
                     return position
+        return None
 
+    """
+        origin must be a soldier position
+    """
     @staticmethod
-    def _move_state(tensor: list[list], final: tuple[int, int], origin: tuple[int, int], my_color: str,
-                    color_to_play: str) -> tuple[list[list], str]:
+    def _move_state(tensor: list[list], final: tuple[int, int], origin: tuple[int, int], my_color: str) -> tuple[list[list], str]:
         return_tensor = deepcopy(tensor)
-        return_tensor[final[0]][final[1]][1] = [color_to_play, my_color]
+        return_tensor[final[0]][final[1]][1] = [tensor[origin[0]][origin[1]][1][0], my_color]
         return_tensor[origin[0]][origin[1]][1] = None
         return return_tensor, return_tensor[final[0]][final[1]][0]
