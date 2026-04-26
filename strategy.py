@@ -12,12 +12,12 @@ class Strategy:
         response_dict = dict()
         response_dict["response"] = "move"
         if game_info["players"][0] == constants.NAME_TAG:
-            my_color = "dark"
-            current_soldier_position = Strategy._retrieve_soldier(game_state, my_color, color_to_play)
+            team_color = constants.SoldierColor.DARK
+            current_soldier_position = Strategy._retrieve_soldier(game_state, team_color, color_to_play)
             valid_moves = Strategy.valid_moves_for_black(game_state, current_soldier_position)
         else:
-            my_color = "light"
-            current_soldier_position = Strategy._retrieve_soldier(game_state, my_color, color_to_play)
+            team_color = constants.SoldierColor.LIGHT
+            current_soldier_position = Strategy._retrieve_soldier(game_state, team_color, color_to_play)
             valid_moves = Strategy.valid_moves_for_white(game_state, current_soldier_position)
         if len(valid_moves) == 0:
             response_dict["response"] = "giveup"
@@ -77,58 +77,58 @@ class Strategy:
         return valid_moves_list
 
     @staticmethod
-    def _retrieve_soldier(tensor: list[list], my_color: str, to_play_color: str) -> tuple[int, int]:
-        if to_play_color is not None:
-            if my_color == "light":
+    def _retrieve_soldier(tensor: list[list], team_color: constants.SoldierColor, soldier_color: str) -> tuple[int, int]:
+        if soldier_color is not None:
+            if team_color is constants.SoldierColor.LIGHT:
                 for i in range(8):
                     for j in range(8):
-                        if tensor[i][j][1] is not None and tensor[i][j][1][0] == to_play_color and tensor[i][j][1][1] == my_color:
+                        if tensor[i][j][1] is not None and tensor[i][j][1][0] == soldier_color and tensor[i][j][1][1] == team_color.value:
                             return i, j
                 raise RuntimeError("unexpected branching")
-            elif my_color == "dark":
+            elif team_color is constants.SoldierColor.DARK:
                 for i in range(7, -1, -1):
                     for j in range(7, -1, -1):
-                        if tensor[i][j][1] is not None and tensor[i][j][1][0] == to_play_color and tensor[i][j][1][1] == my_color:
+                        if tensor[i][j][1] is not None and tensor[i][j][1][0] == soldier_color and tensor[i][j][1][1] == team_color.value:
                             return i, j
                 raise RuntimeError("unexpected branching")
             else:
                 raise RuntimeError("unexpected branching")
 
         else:
-            if my_color == "light":
+            if team_color is constants.SoldierColor.LIGHT:
                 return 0, random.randint(0, 7)
-            elif my_color == "dark":
+            elif team_color is constants.SoldierColor.DARK:
                 return 7, random.randint(0, 7)
             else:
                 raise RuntimeError("unexpected branching")
 
     @staticmethod
-    def _heuristic(tensor: list[list], my_color: str, valid_moves: list[tuple[int, int]]) -> tuple[int, int]:
+    def _heuristic(tensor: list[list], team_color: constants.SoldierColor, valid_moves: list[tuple[int, int]]) -> tuple[int, int]:
         pass
 
     @staticmethod
-    def _search(tensor: list[list], my_color: str, current_soldier_position: tuple[int, int]) -> \
+    def _search(tensor: list[list], team_color: constants.SoldierColor, current_soldier_position: tuple[int, int]) -> \
             tuple[tuple[int, int], tuple[int, int]]:
 
-        if my_color == "light":
+        if team_color is constants.SoldierColor.LIGHT:
             valid_moves = Strategy.valid_moves_for_white(tensor, current_soldier_position)
-            other_color = "dark"
+            other_team_color = constants.SoldierColor.DARK
         else:
             valid_moves = Strategy.valid_moves_for_black(tensor, current_soldier_position)
-            other_color = "light"
-        winning = Strategy._can_win(valid_moves, my_color)
+            other_team_color = constants.SoldierColor.LIGHT
+        winning = Strategy._can_win(valid_moves, team_color)
         if winning is None:
             for move in valid_moves:
-                new_tensor, new_color_to_play = Strategy._move_state(tensor, move, current_soldier_position, my_color)
-                winning = Strategy._search(new_tensor, other_color,
-                                           Strategy._retrieve_soldier(new_tensor, other_color, new_color_to_play))
+                new_tensor, playing_soldier_color = Strategy._move_state(tensor, move, current_soldier_position)
+                winning = Strategy._search(new_tensor, other_team_color,
+                                           Strategy._retrieve_soldier(new_tensor, other_team_color, playing_soldier_color))
                 if winning is not None:
                     return current_soldier_position, move
         return current_soldier_position, winning
 
     @staticmethod
-    def _can_win(positions: list[tuple[int, int]], my_color: str) -> tuple[int, int] | None:
-        if my_color == "light":
+    def _can_win(positions: list[tuple[int, int]], team_color: constants.SoldierColor) -> tuple[int, int] | None:
+        if team_color == constants.SoldierColor.LIGHT:
             for position in positions:
                 if position[0] == 7:
                     return position
@@ -142,8 +142,9 @@ class Strategy:
         origin must be a soldier position
     """
     @staticmethod
-    def _move_state(tensor: list[list], final: tuple[int, int], origin: tuple[int, int], my_color: str) -> tuple[list[list], str]:
+    def _move_state(tensor: list[list], final: tuple[int, int], origin: tuple[int, int]) -> tuple[list[list], str]:
+
         return_tensor = deepcopy(tensor)
-        return_tensor[final[0]][final[1]][1] = [tensor[origin[0]][origin[1]][1][0], my_color]
+        return_tensor[final[0]][final[1]][1] = tensor[origin[0]][origin[1]][1]
         return_tensor[origin[0]][origin[1]][1] = None
         return return_tensor, return_tensor[final[0]][final[1]][0]

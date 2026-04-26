@@ -2,6 +2,7 @@ import random
 import unittest
 from copy import deepcopy
 
+import constants
 import strategy
 from tests import constants_test
 
@@ -10,56 +11,72 @@ class StrategyTest(unittest.TestCase):
     def test_retrieves_soldier(self):
         for i in range(100):
             if i % 2:
-                soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"], "dark",
+                soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"],
+                                                                       constants.SoldierColor.DARK,
                                                                        constants_test.STARTING_INFO["color"])
                 self.assertTrue(
-                    constants_test.STARTING_INFO["board"][soldier_position[0]][soldier_position[1]][1][1] == "dark",
+                    constants_test.STARTING_INFO["board"][soldier_position[0]][soldier_position[1]][1][
+                        1] == constants.SoldierColor.DARK,
                     "not our soldier")
             else:
-                soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"], "light",
+                soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"],
+                                                                       constants.SoldierColor.LIGHT,
                                                                        constants_test.STARTING_INFO["color"])
                 self.assertTrue(
-                    constants_test.STARTING_INFO["board"][soldier_position[0]][soldier_position[1]][1][1] == "light",
+                    constants_test.STARTING_INFO["board"][soldier_position[0]][soldier_position[1]][1][
+                        1] == constants.SoldierColor.LIGHT,
                     "not our soldier")
             self.assertTrue(0 <= soldier_position[0] < 8 and 0 <= soldier_position[1] < 8, "Indices are not in range")
         for i in range(100):
             if i % 2:
                 soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"],
-                                                                       "dark",
+                                                                       constants.SoldierColor.DARK,
                                                                        constants_test.STARTING_INFO["board"]
                                                                        [7][i % 8][1][0])
                 self.assertTrue(
                     constants_test.STARTING_INFO["board"][soldier_position[0]][soldier_position[1]][1][
-                        1] == "dark" and
+                        1] == constants.SoldierColor.DARK and
                     constants_test.STARTING_INFO["board"]
                     [7][i % 8][1][0] == constants_test.STARTING_INFO["board"]
-                    [soldier_position[0]][soldier_position[1]][1][0]
-                    ,
+                    [soldier_position[0]][soldier_position[1]][1][0],
                     "not our soldier")
             else:
                 soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"],
-                                                                       "light",
+                                                                       constants.SoldierColor.LIGHT,
                                                                        constants_test.STARTING_INFO["board"]
                                                                        [0][i % 8][1][0])
                 self.assertTrue(
                     constants_test.STARTING_INFO["board"][soldier_position[0]][soldier_position[1]][1][
-                        1] == "light" and
+                        1] == constants.SoldierColor.LIGHT and
                     constants_test.STARTING_INFO["board"]
                     [0][i % 8][1][0] == constants_test.STARTING_INFO["board"]
-                    [soldier_position[0]][soldier_position[1]][1][0]
-                    ,
+                    [soldier_position[0]][soldier_position[1]][1][0],
                     "not our soldier")
         tensor = constants_test.STARTING_INFO["board"]
         initial_pos = (0, 0)
+        counter = 0
         for i in range(100):
-            valid_move = strategy.Strategy.valid_moves_for_white(tensor, initial_pos)
-            move = random.choice(valid_move)
-            color_to_play = tensor[move[0]][move[1]]
-            tensor = strategy.Strategy._move_state(tensor, move, initial_pos, "white")
-            #finish THIS FUNCTION
+            valid_moves = strategy.Strategy.valid_moves_for_white(tensor, initial_pos)
+            if len(valid_moves) == 0:
+                print(f"no valid moves for {initial_pos} anymore after {i}th iterations ")
+                if counter < 7:
+                    counter += 1
+                    initial_pos = (0, counter)
+                    valid_moves = strategy.Strategy.valid_moves_for_white(tensor, initial_pos)
+                    if len(valid_moves) == 0:
+                        break
+                else:
+                    break
+
+            move = random.choice(valid_moves)
+            color_played = tensor[initial_pos[0]][initial_pos[1]][1][0]
+            tensor, color = strategy.Strategy._move_state(tensor, move, initial_pos)
+            initial_pos = strategy.Strategy._retrieve_soldier(tensor, constants.SoldierColor.LIGHT, color_played)
+            self.assertTrue(initial_pos == move, "soldier not found")
 
     def test_valid_moves(self):
-        current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"], "dark",
+        current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"],
+                                                                       constants.SoldierColor.DARK,
                                                                        constants_test.STARTING_INFO["color"])
         valid_moves = strategy.Strategy.valid_moves_for_black(constants_test.STARTING_INFO["board"],
                                                               current_soldier_position)
@@ -68,7 +85,8 @@ class StrategyTest(unittest.TestCase):
             self.assertTrue(constants_test.STARTING_INFO["board"][moves[0]][moves[1]][1] is None,
                             "put an occupied place in valid moves")
 
-        current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"], "light",
+        current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"],
+                                                                       constants.SoldierColor.LIGHT,
                                                                        constants_test.STARTING_INFO["color"])
         valid_moves = strategy.Strategy.valid_moves_for_black(constants_test.STARTING_INFO["board"],
                                                               current_soldier_position)
@@ -98,31 +116,43 @@ class StrategyTest(unittest.TestCase):
         self.assertTrue(len(valid_moves) == 0, "method misses some valid moves")
 
     def test_search(self):
-        current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"], "dark",
+        current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"],
+                                                                       constants.SoldierColor.DARK,
                                                                        constants_test.STARTING_INFO["color"])
         self.assertTrue(strategy.Strategy._search(constants_test.STARTING_INFO["board"],
-                                                  "dark", current_soldier_position) != ())
+                                                  constants.SoldierColor.DARK, current_soldier_position) != ())
         print(strategy.Strategy._search(constants_test.STARTING_INFO["board"],
-                                        "dark", current_soldier_position))
+                                        constants.SoldierColor.DARK, current_soldier_position))
 
     def test_move_state(self):
-        current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"], "dark",
+        current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"],
+                                                                       constants.SoldierColor.DARK,
                                                                        constants_test.STARTING_INFO["color"])
         valid_moves = strategy.Strategy.valid_moves_for_black(constants_test.STARTING_INFO["board"],
                                                               current_soldier_position)
         initial_tensor = deepcopy(constants_test.STARTING_INFO["board"])
         for move in valid_moves:
             new_tensor, new_color_to_play = strategy.Strategy._move_state(constants_test.STARTING_INFO["board"], move,
-                                                                          current_soldier_position, "dark")
+                                                                          current_soldier_position)
             self.assertEqual(initial_tensor, constants_test.STARTING_INFO["board"], "modified initial tensor")
-            self.assertTrue(new_tensor[move[0]][move[1]][1] == [constants_test.STARTING_INFO["board"]
-                                                                [current_soldier_position[0]]
-                                                                [current_soldier_position[1]][1][0], "dark"],
-                            "return_tensor not changed at the correct place")
+            self.assertTrue(new_tensor[move[0]][move[1]][1] == constants_test.STARTING_INFO["board"]
+            [current_soldier_position[0]]
+            [current_soldier_position[1]][1], "return_tensor not changed at the correct place")
             self.assertTrue(new_color_to_play == initial_tensor[move[0]][move[1]][0], "wrong color to play")
+            counter_dark = 0
+            counter_light = 0
+            for covector in new_tensor:
+                for element in covector:
+                    if element[1] is not None:
+                        if element[1][1] is constants.SoldierColor.DARK.value:
+                            counter_dark +=1
+                        else:
+                            counter_light +=1
+            self.assertTrue(counter_light == 8 and counter_dark == 8, "deleted a soldier")
+
 
             current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"],
-                                                                           "light",
+                                                                           constants.SoldierColor.LIGHT,
                                                                            constants_test.STARTING_INFO["color"])
             valid_moves = strategy.Strategy.valid_moves_for_white(constants_test.STARTING_INFO["board"],
                                                                   current_soldier_position)
@@ -130,13 +160,24 @@ class StrategyTest(unittest.TestCase):
         for move in valid_moves:
             new_tensor, new_color_to_play = strategy.Strategy._move_state(constants_test.STARTING_INFO["board"],
                                                                           move,
-                                                                          current_soldier_position, "light")
+                                                                          current_soldier_position)
             self.assertEqual(initial_tensor, constants_test.STARTING_INFO["board"], "modified initial tensor")
             self.assertTrue(new_tensor[move[0]][move[1]][1] == [constants_test.STARTING_INFO["board"]
                                                                 [current_soldier_position[0]][
-                                                                    current_soldier_position[1]][1][0], "light"],
+                                                                    current_soldier_position[1]][1][0],
+                                                                constants.SoldierColor.LIGHT],
                             "return_tensor not changed at the correct place")
             self.assertTrue(new_color_to_play == initial_tensor[move[0]][move[1]][0], "wrong color to play")
+            counter_dark = 0
+            counter_light = 0
+            for covector in new_tensor:
+                for element in covector:
+                    if element[1] is not None:
+                        if element[1][1] is constants.SoldierColor.DARK.value:
+                            counter_dark +=1
+                        else:
+                            counter_light +=1
+            self.assertTrue(counter_light == 8 and counter_dark == 8, "deleted a soldier")
 
 
 if __name__ == '__main__':
