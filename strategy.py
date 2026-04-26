@@ -37,14 +37,14 @@ class Strategy:
         for i in range(current_soldier_position[0] + 1, 8):
             if 8 <= current_soldier_position[1] + i - current_soldier_position[0]:
                 break
-            if tensor[i][current_soldier_position[1]][1] is not None:
+            if tensor[i][current_soldier_position[1] + i - current_soldier_position[0]][1] is not None:
                 break
             else:
                 valid_moves_list.append((i, current_soldier_position[1] + i - current_soldier_position[0]))
         for i in range(current_soldier_position[0] + 1, 8):
             if current_soldier_position[1] - i + current_soldier_position[0] < 0:
                 break
-            if tensor[i][current_soldier_position[1]][1] is not None:
+            if tensor[i][current_soldier_position[1] - i + current_soldier_position[0]][1] is not None:
                 break
             else:
                 valid_moves_list.append((i, current_soldier_position[1] - i + current_soldier_position[0]))
@@ -69,7 +69,7 @@ class Strategy:
         for i in range(current_soldier_position[0] - 1, -1, -1):
             if current_soldier_position[1] - current_soldier_position[0] - i < 0:
                 break
-            elif tensor[i][current_soldier_position[1]][1] is not None:
+            elif tensor[i][current_soldier_position[1] - current_soldier_position[0] - i][1] is not None:
                 break
             else:
                 valid_moves_list.append((i, current_soldier_position[1] - current_soldier_position[0] - i))
