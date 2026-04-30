@@ -119,10 +119,10 @@ class StrategyTest(unittest.TestCase):
         current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"],
                                                                        constants.SoldierColor.DARK,
                                                                        constants_test.STARTING_INFO["color"])
-        self.assertTrue(strategy.Strategy._search(constants_test.STARTING_INFO["board"],
-                                                  constants.SoldierColor.DARK, current_soldier_position) != ())
-        print(strategy.Strategy._search(constants_test.STARTING_INFO["board"],
-                                        constants.SoldierColor.DARK, current_soldier_position))
+        self.assertTrue(strategy.Strategy._search_recursive(constants_test.STARTING_INFO["board"],
+                                                            constants.SoldierColor.DARK, current_soldier_position) != ())
+        print(strategy.Strategy._search_recursive(constants_test.STARTING_INFO["board"],
+                                                  constants.SoldierColor.DARK, current_soldier_position))
 
     def test_move_state(self):
         current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"],
@@ -178,6 +178,14 @@ class StrategyTest(unittest.TestCase):
                         else:
                             counter_light +=1
             self.assertTrue(counter_light == 8 and counter_dark == 8, "deleted a soldier")
+
+    def test_informed_search(self):
+        current_soldier_position = strategy.Strategy._retrieve_soldier(constants_test.STARTING_INFO["board"],
+                                                                       constants.SoldierColor.DARK,
+                                                                       constants_test.STARTING_INFO["color"])
+        print(strategy.Strategy._informed_search(constants_test.STARTING_INFO["board"],
+                                                  constants.SoldierColor.DARK, current_soldier_position))
+
 
 
 if __name__ == '__main__':
