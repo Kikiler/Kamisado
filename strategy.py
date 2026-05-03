@@ -3,6 +3,15 @@ import constants
 from copy import deepcopy
 from queue import PriorityQueue
 
+from dataclasses import dataclass, field
+from typing import Any
+
+
+@dataclass(order=True)
+class PrioritizedItem:
+    priority: float
+    item: Any = field(compare=False)
+
 
 class Strategy:
 
@@ -80,21 +89,21 @@ class Strategy:
         return valid_moves_list
 
     @staticmethod
-    def _retrieve_soldier(tensor: list[list], team_color: constants.SoldierColor, soldier_color: str) -> tuple[
-        int, int]:
+    def _retrieve_soldier(tensor: list[list], team_color: constants.SoldierColor, soldier_color: str) \
+            -> tuple[int, int]:
         if soldier_color is not None:
             if team_color is constants.SoldierColor.LIGHT:
                 for i in range(8):
                     for j in range(8):
-                        if tensor[i][j][1] is not None and tensor[i][j][1][0] == soldier_color and tensor[i][j][1][
-                            1] == team_color.value:
+                        if (tensor[i][j][1] is not None and tensor[i][j][1][0] == soldier_color and
+                                tensor[i][j][1][1] == team_color.value):
                             return i, j
                 raise RuntimeError("unexpected branching")
             elif team_color is constants.SoldierColor.DARK:
                 for i in range(7, -1, -1):
                     for j in range(7, -1, -1):
-                        if tensor[i][j][1] is not None and tensor[i][j][1][0] == soldier_color and tensor[i][j][1][
-                            1] == team_color.value:
+                        if (tensor[i][j][1] is not None and tensor[i][j][1][0] == soldier_color and
+                                tensor[i][j][1][1] == team_color.value):
                             return i, j
                 raise RuntimeError("unexpected branching")
             else:
@@ -109,8 +118,22 @@ class Strategy:
                 raise RuntimeError("unexpected branching")
 
     @staticmethod
-    def _heuristic(tensor: list[list], team_color: constants.SoldierColor) -> int:
-
+    def _heuristic(tensor: list[list], team_color: constants.SoldierColor, current_soldier_position: tuple[int, int],
+                   next_playing_soldier_position: tuple[int, int]) -> float:
+        if team_color is constants.SoldierColor.LIGHT.value:
+            valid_moves = Strategy.valid_moves_for_black(tensor, next_playing_soldier_position)
+            if Strategy._can_win(valid_moves, constants.SoldierColor.LIGHT) is not None:
+                return float('+inf')
+            return round(len(valid_moves) /
+                         constants.static_dangerosity_tensor_white[current_soldier_position[0]][
+                             current_soldier_position[1]], 2)
+        else:
+            valid_moves = Strategy.valid_moves_for_white(tensor, next_playing_soldier_position)
+            if Strategy._can_win(valid_moves, constants.SoldierColor.DARK) is not None:
+                return float('+inf')
+            return round(len(valid_moves) /
+                         constants.static_dangerosity_tensor_black[current_soldier_position[0]][
+                             current_soldier_position[1]], 2)
 
     @staticmethod
     def _search_recursive(tensor: list[list], team_color: constants.SoldierColor,
@@ -137,7 +160,7 @@ class Strategy:
     @staticmethod
     def _informed_search(tensor: list[list], team_color: constants.SoldierColor,
                          current_soldier_position: tuple[int, int]) -> \
-            list[tuple[int, int]]:
+            tuple[int, int]:
 
         if team_color is constants.SoldierColor.LIGHT:
             valid_moves = Strategy.valid_moves_for_white(tensor, current_soldier_position)
@@ -147,20 +170,15 @@ class Strategy:
             other_team_color = constants.SoldierColor.LIGHT
         winning = Strategy._can_win(valid_moves, team_color)
         if winning is None:
-            priority_q = PriorityQueue(len(valid_moves))
-            solutions = list()
+            current_state_value = float("+inf")
             for move in valid_moves:
                 new_tensor, playing_soldier_color = Strategy._move_state(tensor, move, current_soldier_position)
-                priority_q.put((Strategy._heuristic(new_tensor, team_color), (new_tensor, playing_soldier_color)))
-            while not priority_q.empty():
-                new_tensor, playing_soldier_color = priority_q.get()[1]
-                solutions.append([current_soldier_position] +
-                                 Strategy._informed_search(new_tensor, other_team_color,
-                                                           Strategy._retrieve_soldier(new_tensor, other_team_color,
-                                                                                      playing_soldier_color)))
-            return min(solutions, key=lambda x: len(x))
-
-        return [current_soldier_position, winning]
+                next_state_value = Strategy._heuristic(new_tensor, team_color, move,
+                                                       Strategy._retrieve_soldier(new_tensor, other_team_color, playing_soldier_color))
+                if next_state_value < current_state_value:
+                    current_state_value = next_state_value
+                    winning = move
+        return winning
 
     @staticmethod
     def _can_win(positions: list[tuple[int, int]], team_color: constants.SoldierColor) -> tuple[int, int] | None:
