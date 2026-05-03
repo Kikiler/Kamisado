@@ -140,3 +140,34 @@ class Strategy:
             return round(len(valid_moves) /
                          constants.static_dangerosity_tensor_black[current_soldier_position[0]][
                              current_soldier_position[1]], 2)
+
+    @staticmethod
+    def _informed_search_recursive_with_pruning(tensor: list[list], team_color: constants.SoldierColor,
+                                                current_soldier_position: tuple[int, int], alpha: float = float("-inf"),
+                                                beta: float = float("+inf"), depth: int = 7) -> tuple[
+        float, tuple[int, int] | None]:
+        if utils.is_won(current_soldier_position, team_color) or depth == 0:
+            return -Strategy.heuristic_in_place(tensor, team_color, current_soldier_position), current_soldier_position
+        if team_color is constants.SoldierColor.LIGHT:
+            valid_moves = utils.valid_moves_for_white(tensor, current_soldier_position)
+            other_team_color = constants.SoldierColor.DARK
+        else:
+            valid_moves = utils.valid_moves_for_black(tensor, current_soldier_position)
+            other_team_color = constants.SoldierColor.LIGHT
+        current_value = float("+inf")
+        winning = None
+        for move in valid_moves:
+            new_tensor, playing_soldier_color = utils.move_state(tensor, move, current_soldier_position)
+            value, _ = Strategy._informed_search_recursive_with_pruning(new_tensor, other_team_color,
+                                                                        utils.retrieve_soldier(new_tensor,
+                                                                                               other_team_color,
+                                                                                               playing_soldier_color),
+                                                                        -beta, -alpha, depth - 1)
+            if value <= current_value:
+                current_value = value
+                winning = move
+            beta = min(beta, current_value)
+            if beta <= alpha:
+                #print(f"pruned with alpha: {alpha} and beta: {beta} at depth: {depth}")
+                break
+        return -current_value, winning

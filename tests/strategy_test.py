@@ -226,6 +226,43 @@ class StrategyTest(unittest.TestCase):
             print(f"white soldier position : {white_soldier_position} ")
             utils.tensor_print(tensor)
 
+    def test_informed_search_recursive_pruning(self):
+        tensor = constants_test.STARTING_INFO["board"]
+        black_soldier_position = utils.retrieve_soldier(tensor,
+                                                          constants.SoldierColor.DARK,
+                                                          constants_test.STARTING_INFO["color"])
+        black_move = strategy.Strategy._informed_search_recursive_with_pruning(tensor,
+                                                           constants.SoldierColor.DARK, black_soldier_position)
+        self.assertTrue(black_move[1] in utils.valid_moves_for_black(tensor, black_soldier_position))
+        tensor, playing_soldier_color = utils.move_state(tensor, black_move[1], black_soldier_position)
+        white_soldier_position = utils.retrieve_soldier(tensor,
+                                                          constants.SoldierColor.LIGHT,
+                                                          playing_soldier_color)
+        print(f"starting from : {black_soldier_position} to {black_move}")
+        black_soldier_position = black_move[1]
+        while (not utils.is_won(black_soldier_position, constants.SoldierColor.DARK) and
+               not utils.is_won(white_soldier_position, constants.SoldierColor.LIGHT)):
+            white_move = strategy.Strategy._informed_search_recursive_with_pruning(tensor,
+                                                           constants.SoldierColor.LIGHT, white_soldier_position)[1]
+            if white_move is not None:
+                self.assertTrue(white_move in utils.valid_moves_for_white(tensor, white_soldier_position))
+                tensor, playing_soldier_color = utils.move_state(tensor, white_move, white_soldier_position)
+                white_soldier_position = white_move
+
+            black_move = strategy.Strategy._informed_search_recursive_with_pruning(tensor,
+                                                                      constants.SoldierColor.DARK,
+                                                                      black_soldier_position)[1]
+            if black_move is not None:
+                self.assertTrue(black_move in utils.valid_moves_for_black(tensor, black_soldier_position))
+                tensor, playing_soldier_color = utils.move_state(tensor, black_move, black_soldier_position)
+                black_soldier_position = black_move
+            if black_move is None and white_move is None:
+                print("no one won")
+                break
+            print(f"black soldier position : {black_soldier_position} ")
+            print(f"white soldier position : {white_soldier_position} ")
+            utils.tensor_print(tensor)
+
 
 
 
