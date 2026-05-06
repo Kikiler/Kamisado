@@ -20,10 +20,11 @@ class Strategy:
             valid_moves = utils.valid_moves_for_white(game_state, current_soldier_position)
 
         if len(valid_moves) == 0:
-            response_dict["response"] = "giveup"
+            response_dict["move"] = [current_soldier_position, current_soldier_position]
+            response_dict["message"] = "alles < Nederlands "
             return response_dict
         response_dict["move"] = [current_soldier_position,
-                                 Strategy._search_recursive(game_state, team_color, current_soldier_position)]
+                                 Strategy._informed_search(game_state, team_color, current_soldier_position)]
         response_dict["message"] = "alles < Nederlands "
         return response_dict
 

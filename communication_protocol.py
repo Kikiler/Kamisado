@@ -36,7 +36,7 @@ class Client:
             raise OSError("connection failed in config_socket")
         return your_socket
 
-    def sign_in_request(self, port: int = constants.RECEPTION_PORT, name: str = constants.NAME_TAG):
+    def sign_in_request(self, port: int = constants.RECEPTION_PORT, name: str = constants.NAME_TAG) -> int:
         tojson_dict = {
             "request": "subscribe",
             "port": port,
@@ -48,12 +48,12 @@ class Client:
         sign_in_result = Server.receive_msg_from_socket(current_socket)
         sign_in_result_dict = json.loads(sign_in_result)
         if sign_in_result_dict["response"] == "ok":
-            print("signed in ok")
+            current_socket.close()
+            return 0
         elif sign_in_result_dict["response"] == "error":
             raise RuntimeError("failed sign in")
         else:
             raise RuntimeError("unexpected branching")
-        current_socket.close()
 
     def pong_response(self, to: socket.socket):
         pong_request_dict = {
@@ -67,16 +67,6 @@ class Client:
         json_str = json.dumps(request_dict)
         self.__send_msg(json_str, to)
         to.close()
-
-    @staticmethod
-    def run(func):
-        from time import sleep
-        sleep(5)
-        for i in range(10):
-            try:
-                func()
-            except TypeError:
-                TypeError("not callable")
 
 
 class Server:
@@ -106,7 +96,7 @@ class Server:
         emitter = self.__accept_socket()
         buffer = emitter.recv(4)
         while len(buffer) != 4:
-            buffer += emitter.recv(4-len(buffer))
+            buffer += emitter.recv(4 - len(buffer))
         response_size = struct.unpack("@I", buffer)[0]  #getting size of msg
         received = emitter.recv(response_size)
         while len(received) < response_size:
@@ -131,7 +121,3 @@ class Server:
             received += to_listen_socket.recv(response_size - len(received))
         to_listen_socket.close()
         return received.decode()
-
-    def run(self):
-        while 1:
-            print(self.receive_msg()[1])
