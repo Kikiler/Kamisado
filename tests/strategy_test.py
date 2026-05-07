@@ -5,6 +5,8 @@ import utils
 import constants
 import strategy
 from tests import constants_test
+from time import perf_counter
+import asyncio
 
 
 class StrategyTest(unittest.TestCase):
@@ -242,16 +244,19 @@ class StrategyTest(unittest.TestCase):
         black_soldier_position = black_move[1]
         while (not utils.is_won(black_soldier_position, constants.SoldierColor.DARK) and
                not utils.is_won(white_soldier_position, constants.SoldierColor.LIGHT)):
+            t0 = perf_counter()
             white_move = strategy.Strategy._informed_search_recursive_with_pruning(tensor,
                                                            constants.SoldierColor.LIGHT, white_soldier_position)[1]
+            print(f"time elapsed after 1st call : {perf_counter()-t0} ")
             if white_move is not None:
                 self.assertTrue(white_move in utils.valid_moves_for_white(tensor, white_soldier_position))
                 tensor, playing_soldier_color = utils.move_state(tensor, white_move, white_soldier_position)
                 white_soldier_position = white_move
-
+            t0 = perf_counter()
             black_move = strategy.Strategy._informed_search_recursive_with_pruning(tensor,
                                                                       constants.SoldierColor.DARK,
                                                                       black_soldier_position)[1]
+            print(f"time elapsed after 2nd call : {perf_counter()-t0} ")
             if black_move is not None:
                 self.assertTrue(black_move in utils.valid_moves_for_black(tensor, black_soldier_position))
                 tensor, playing_soldier_color = utils.move_state(tensor, black_move, black_soldier_position)
@@ -262,6 +267,17 @@ class StrategyTest(unittest.TestCase):
             print(f"black soldier position : {black_soldier_position} ")
             print(f"white soldier position : {white_soldier_position} ")
             utils.tensor_print(tensor)
+
+    def test_iterative_deepening(self):
+        tensor = constants_test.STARTING_INFO["board"]
+        black_soldier_position = utils.retrieve_soldier(tensor,
+                                                        constants.SoldierColor.DARK,
+                                                        constants_test.STARTING_INFO["color"])
+        black_move = asyncio.run(strategy.Strategy._informed_search_recursive_with_pruning_iteratively_deepening(tensor,
+                                                                               constants.SoldierColor.DARK,
+                                                                               black_soldier_position, 3))
+        self.assertTrue(black_move in utils.valid_moves_for_black(tensor, black_soldier_position))
+
 
 
 

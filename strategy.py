@@ -1,5 +1,10 @@
+import concurrent.futures
+import threading
+import time
+from collections import defaultdict
 import constants
 import utils
+import asyncio
 
 
 class Strategy:
@@ -145,8 +150,8 @@ class Strategy:
     @staticmethod
     def _informed_search_recursive_with_pruning(tensor: list[list], team_color: constants.SoldierColor,
                                                 current_soldier_position: tuple[int, int], alpha: float = float("-inf"),
-                                                beta: float = float("+inf"), depth: int = 7) -> tuple[
-        float, tuple[int, int] | None]:
+                                                beta: float = float("+inf"), depth: int = 7) \
+            -> tuple[float, tuple[int, int] | None]:
         if utils.is_won(current_soldier_position, team_color) or depth == 0:
             return -Strategy.heuristic_in_place(tensor, team_color, current_soldier_position), current_soldier_position
         if team_color is constants.SoldierColor.LIGHT:
@@ -172,3 +177,82 @@ class Strategy:
                 #print(f"pruned with alpha: {alpha} and beta: {beta} at depth: {depth}")
                 break
         return -current_value, winning
+
+    @staticmethod
+    async def _informed_search_recursive_with_pruning_iteratively_deepening(tensor: list[list],
+                                                                            team_color: constants.SoldierColor,
+                                                                            current_soldier_position: tuple[int, int],
+                                                                            timeout: float) \
+            -> tuple[int, int]:
+        cache = defaultdict(lambda: float("+inf"))
+
+        async def _informed_search_recursive_with_pruning_in_func(tensor: list[list],
+                                                                  team_color: constants.SoldierColor,
+                                                                  current_soldier_position: tuple[int, int], depth: int,
+                                                                  alpha: float = float("-inf"),
+                                                                  beta: float = float("+inf")) \
+                -> tuple[float, tuple[int, int] | None]:
+            if utils.is_won(current_soldier_position, team_color) or depth == 0:
+                return -Strategy.heuristic_in_place(tensor, team_color,
+                                                    current_soldier_position), current_soldier_position
+            if team_color is constants.SoldierColor.LIGHT:
+                valid_moves = utils.valid_moves_for_white(tensor, current_soldier_position)
+                other_team_color = constants.SoldierColor.DARK
+            else:
+                valid_moves = utils.valid_moves_for_black(tensor, current_soldier_position)
+                other_team_color = constants.SoldierColor.LIGHT
+            current_value = float("+inf")
+            winning = None
+            possibilities = [(current_soldier_position, valid_move) for
+                             valid_move in valid_moves]
+            possibilities.sort(key=lambda poss: cache[poss])
+            for move in valid_moves:
+                new_tensor, playing_soldier_color = utils.move_state(tensor, move, current_soldier_position)
+                await asyncio.sleep(0)
+                value, _ = await _informed_search_recursive_with_pruning_in_func(new_tensor, other_team_color,
+                                                                                 utils.retrieve_soldier(new_tensor,
+                                                                                                        other_team_color,
+                                                                                                        playing_soldier_color),
+                                                                                 depth - 1,
+                                                                                 - beta, -alpha)
+                if value <= current_value:
+                    current_value = value
+                    winning = move
+                beta = min(beta, current_value)
+                if beta <= alpha:
+                    # print(f"pruned with alpha: {alpha} and beta: {beta} at depth: {depth}")
+                    break
+            cache[(current_soldier_position, winning)] = -current_value
+            return -current_value, winning
+
+        current_value, current_move = float("+inf"), current_soldier_position
+        value, move = current_value, current_move
+
+        async def check_timeout(start: float) -> None:
+            while 1:
+                if timeout <= time.time() - start:
+                    #print(time.time() - start)
+                    raise RuntimeError("time over")
+                await asyncio.sleep(0)
+
+        depth = 1
+        start = time.time()
+        task = asyncio.create_task(check_timeout(start))
+        while time.time() - start < timeout:
+            try:
+                current_value, current_move = await _informed_search_recursive_with_pruning_in_func(tensor, team_color,
+                                                                                                    current_soldier_position,
+                                                                                                    depth, timeout - (
+                                                                                                            time.time() - start))
+                value, move = current_value, current_move
+                #print(f"from {current_soldier_position} to {move} with value : {value} at depth : {depth} "
+                      #f"with {round(time.time() - start, 3)} seconds spent and "
+                      #f"thus {round(timeout - time.time() + start, 3)} seconds left")
+                depth += 1
+                await task
+            except RuntimeError:
+                break
+        #print('depth =', depth)
+        #print(f"time spent running : {round(time.time() - start, 3)} ")
+        #print(move)
+        return move
