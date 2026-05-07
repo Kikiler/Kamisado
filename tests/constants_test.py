@@ -1,5 +1,4 @@
 import constants
-from enum import Enum
 
 STARTING_INFO = {
     "board": [

@@ -278,6 +278,9 @@ class StrategyTest(unittest.TestCase):
                                                                                black_soldier_position, 3))
         self.assertTrue(black_move in utils.valid_moves_for_black(tensor, black_soldier_position))
 
+    def test_move(self):
+
+
 
 
 
