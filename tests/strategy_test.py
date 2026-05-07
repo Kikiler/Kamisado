@@ -279,6 +279,8 @@ class StrategyTest(unittest.TestCase):
         self.assertTrue(black_move in utils.valid_moves_for_black(tensor, black_soldier_position))
 
     def test_move(self):
+        dic = strategy.Strategy.move(constants_test.STARTING_INFO)
+        self.assertTrue(dic is not None and dic.get("move") is not None)
 
 
 
